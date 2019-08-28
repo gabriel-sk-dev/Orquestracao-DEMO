@@ -18,6 +18,7 @@ namespace ExemploPedido.Serveless
             builder.Services.AddScoped<CriarNovoPedidoServico>();
             builder.Services.AddScoped<GerarBoletoServico>();
             builder.Services.AddScoped<PagamentoComCartaoServico>();
+            builder.Services.AddScoped<RecimentoBoletoService>();
         }
     }
 }

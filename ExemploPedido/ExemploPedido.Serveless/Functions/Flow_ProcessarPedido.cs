@@ -26,12 +26,15 @@ namespace ExemploPedido.Serveless.Functions
 
             if(novoPedidoComando.FormaPagamento.Forma == "Boleto")
             {
+                if (!context.IsReplaying)
+                    logger.LogInformation($"Processando pagamento em  boleto para pedido {pedidoEmProcessamento.Id}");
                 var gerarBoletoComando = new GerarBoletoComando(novoPedidoComando.ProcessoId);
                 var boleto = await context.CallActivityAsync<Boleto>(nameof(Activity_GerarBoleto), gerarBoletoComando);
                 pedidoEmProcessamento.Status = "AguardandoPagamento";
                 context.SetCustomStatus(pedidoEmProcessamento.Status);
+
                 var confirmacaoPagamento = await context.WaitForExternalEvent<string>("PagamentoRealizado", 
-                    TimeSpan.FromDays((boleto.Vencimento.AddDays(7) - DateTime.UtcNow).TotalDays), "Negado");
+                    TimeSpan.FromDays((boleto.Vencimento.AddDays(1) - DateTime.UtcNow).TotalDays), "Negado");
                 
                 if(confirmacaoPagamento == "Negado")
                 {
@@ -40,10 +43,15 @@ namespace ExemploPedido.Serveless.Functions
                     pedidoEmProcessamento.Status = "Cancelado";
                     return pedidoEmProcessamento;
                 }
+
+                var comandoRecebimentoBoleto = new BoletoRecebidoComando(boleto.NossoNumero, boleto.PedidoId);
+                await context.CallActivityAsync<Pedido>(nameof(Activity_ConfirmarRecebimentoBoleto), comandoRecebimentoBoleto);
             }
 
             if (novoPedidoComando.FormaPagamento.Forma == "Cartao")
             {
+                if (!context.IsReplaying)
+                    logger.LogInformation($"Processando pagamento em  cartao para pedido {pedidoEmProcessamento.Id}");
                 pedidoEmProcessamento.Status = "AguardandoPagamento";
                 context.SetCustomStatus(pedidoEmProcessamento.Status);
                 var pagamentoCartao = new PagarComCartaoComando(novoPedidoComando.ProcessoId, novoPedidoComando.FormaPagamento.Token);
@@ -60,8 +68,9 @@ namespace ExemploPedido.Serveless.Functions
                     }
                 }
             }
-            context.SetCustomStatus("PagamentoRealizado");
-            context.SetCustomStatus(pedidoEmProcessamento.Status);
+
+            pedidoEmProcessamento.Status = "ProntoParaEnvio";
+            context.SetCustomStatus("ProntoParaEnvio");
             return pedidoEmProcessamento;
         }
     }

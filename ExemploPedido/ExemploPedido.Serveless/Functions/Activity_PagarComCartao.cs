@@ -20,7 +20,7 @@ namespace ExemploPedido.Serveless.Functions
             [ActivityTrigger] PagarComCartaoComando comando,
             ILogger logger)
         {
-            logger.LogInformation($"[START ACTIVITY] --> {nameof(Activity_CancelaPedido)} para pedido: {comando.PedidoId}");
+            logger.LogInformation($"[START ACTIVITY] --> {nameof(Activity_PagarComCartao)} para pedido: {comando.PedidoId}");
             var resultado = await _servico.Executar(comando);
             return resultado;
         }
